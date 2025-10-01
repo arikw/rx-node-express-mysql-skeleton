@@ -1,0 +1,30 @@
+name: rx-devcontainer
+services:
+  vscode:
+    build:
+      context: .
+      dockerfile: Containerfile
+      args:
+        USER: vscode
+        WORKDIR: /workspace
+    user: vscode
+    working_dir: /workspace
+    # Overrides default command so things don't shut down after the process ends.
+    command: /bin/sh -c "while sleep 1000; do :; done"
+    environment:
+      SHELL: /bin/bash
+    volumes:
+      - rx-devcontainer-profile:/home/vscode
+      - rx-devcontainer-vscode-server-data:/home/vscode/.vscode-server/data/User
+      - ../:/workspace:cached
+    logging:
+      options:
+        max-size: 25m
+    networks:
+      - default
+
+volumes:
+  rx-devcontainer-profile:
+    name: rx-devcontainer-profile
+  rx-devcontainer-vscode-server-data:
+    name: rx-devcontainer-vscode-server-data

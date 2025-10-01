@@ -1,0 +1,16 @@
+node_modules
+dist/*
+build/*
+tmp/
+*.zip
+*.pdf
+*.bak
+*.txt
+
+.env
+.env.test
+!**/.emptydir
+.nyc_output
+
+.DS_Store
+.unison
