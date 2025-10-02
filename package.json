@@ -60,5 +60,13 @@
   },
   "engines": {
     "node": ">=20.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arikw/rx-node-express-mysql-skeleton.git"
+  },
+  "bugs": {
+    "url": "https://github.com/arikw/rx-node-express-mysql-skeleton/issues"
+  },
+  "homepage": "https://github.com/arikw/rx-node-express-mysql-skeleton#readme"
 }
