@@ -1,7 +1,43 @@
-FROM ghcr.io/eugenmayer/unison:2.52.1-4.12.0
+FROM ghcr.io/eugenmayer/unison:2.52.1-4.12.0 AS upstream
+
+FROM alpine:3.21
+
+RUN apk add --no-cache bash shadow supervisor
+
+ARG UNISON_VERSION=2.53.7-r1
+RUN apk add --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community --no-cache unison=${UNISON_VERSION}
+
+ENV UNISON_ARGS ''
+ENV UNISON_WATCH_ARGS ''
+ENV APP_VOLUME '/app_sync'
+ENV UNISON_SRC '/app_sync'
+ENV UNISON_DEST '/host_sync'
+
+# These can be overridden later
+ENV TZ="Europe/Berlin" \
+    LANG="C.UTF-8" \
+    UNISON_DIR="/data" \
+    HOME="/root"
+
+COPY --from=upstream /entrypoint.sh /entrypoint.sh
+COPY --from=upstream /usr/local/bin/precopy_appsync /usr/local/bin/precopy_appsync
+COPY --from=upstream /etc/monitrc /etc/monitrc
+
+RUN mkdir -p /docker-entrypoint.d \
+    && chmod +x /entrypoint.sh \
+    && mkdir -p /etc/supervisor.conf.d \
+    && mkdir /unison \
+    && chmod +x /usr/local/bin/precopy_appsync \
+    && chmod u=rw,g=,o= /etc/monitrc
+
+COPY --from=upstream /etc/supervisord.conf /etc/supervisord.conf
+COPY --from=upstream /etc/supervisor.conf.d/supervisor.daemon.conf /etc/supervisor.conf.d/supervisor.daemon.conf
 
 # Pre-create a user with the UID/GID we will always use
 ARG OWNER_UID=1000
 ARG OWNER_GID=1000
 RUN addgroup -g ${OWNER_GID} unisongroup && \
     adduser -D -u ${OWNER_UID} -G unisongroup unisonuser
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["supervisord"]
