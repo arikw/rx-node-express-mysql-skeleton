@@ -2,8 +2,8 @@ services:
   vscode:
     build:
       args:
-        WORKDIR: /workspaces/local
-    working_dir: /workspaces/local
+        WORKDIR: /workspace
+    working_dir: /workspace
     environment:
       HOST_TYPE: windows
       DOCKER_CONFIG: /home/vscode/.docker

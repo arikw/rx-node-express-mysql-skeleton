@@ -12,7 +12,6 @@ function createServerApp() {
   
   app.use(express.json(), (err, req, res, next) => err ? next('Invalid JSON') : next());
 
-
   // For more information about Express' urlencoded middleware, see: http://expressjs.com/en/5x/api.html#express.urlencoded
   app.use(express.urlencoded({ extended: true }));
 
