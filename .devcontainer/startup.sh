@@ -8,7 +8,8 @@ fi
 
 if [ -f /home/vscode/.docker/config.json ]; then
   echo "Configuring Docker credentials..."
-  jq 'del(.credsStore)' /home/vscode/.docker/config.json > /home/vscode/.docker/config.json.tmp && mv /home/vscode/.docker/config.json.tmp /home/vscode/.docker/config.json
+  jq 'del(.credsStore)' /home/vscode/.docker/config.json > /home/vscode/.docker/config.json.tmp && \
+  cat /home/vscode/.docker/config.json.tmp > /home/vscode/.docker/config.json
 fi
 
 if [ ! -d /home/vscode/.local/share/fnm ]; then
