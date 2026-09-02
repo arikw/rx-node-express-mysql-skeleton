@@ -21,34 +21,62 @@ function validationMW(...middlewares) {
   ];
 }
 
-/*
-  Checks that no unknown params were given
-*/
+/**
+ * Checks that no unknown params were given, PER LOCATION.
+ *
+ * A name declared for the body is unknown in the query string, and vice
+ * versa. That distinction is the point: the check used to merge body, params
+ * and query into one namespace before looking for unknown names, so a
+ * duplicate of a declared field in another location collapsed onto the same
+ * key and passed. `?token=x` alongside a correct body was accepted.
+ *
+ * Harmless for most fields -- a controller reads one location and ignores the
+ * stray copy -- and not harmless at all for a credential, where the damage is
+ * done by the value being in the URL before any of this runs: it is in the
+ * access log of every hop by then. Routes taking a password or a token used
+ * to guard themselves one by one; this closes it for every route instead of
+ * the ones somebody remembered.
+ *
+ * A value that arrives ONLY in the wrong location was already refused, by the
+ * field validator rather than by this check -- `body('x')` reads the body,
+ * finds nothing and fails. That behaviour is unchanged.
+ */
 function strictValidationMW(...middlewares) {
   const locations = ['body', 'params', 'query'];
   return validationMW(...middlewares,
     (req, res, next) => {
 
-      // All the params that were checked by the validation middlewares
-      const mandatoryOnlyParamNames = Object.keys(matchedData(
-        req,
-        { locations, includeOptionals: false, onlyValidData: false }
-      ));
+      const missing = [];
+      const unknown = [];
 
-      const allParamNames = Object.keys(matchedData(
-        req,
-        { locations, includeOptionals: true, onlyValidData: false }
-      ));
-
-      // All the request params given - body, query etc.
-      const existingParams = {};
       for (const location of locations) {
-        Object.assign(existingParams, req[location] );
-      }
+        // What this location declares, asked for one location at a time --
+        // which is what makes the comparison location-aware.
+        const declared = Object.keys(matchedData(
+          req,
+          { locations: [location], includeOptionals: true, onlyValidData: false }
+        ));
+        const declaredMandatory = Object.keys(matchedData(
+          req,
+          { locations: [location], includeOptionals: false, onlyValidData: false }
+        ));
 
-      const existingParamNames = Object.keys(JSON.parse(JSON.stringify(existingParams))  /* removes undefined values */);
-      const unknown = existingParamNames.filter(item => allParamNames.indexOf(item) === -1);
-      const missing = mandatoryOnlyParamNames.filter(item => (existingParamNames.indexOf(item) === -1));
+        // JSON round-trip drops undefined values, as the merged version did.
+        const supplied = Object.keys(JSON.parse(JSON.stringify(req[location] ?? {})));
+
+        for (const name of supplied) {
+          if (!declared.includes(name)) {
+            // Named with its location, so "token" arriving in the query
+            // string does not read as the body field of the same name.
+            unknown.push(`${location}.${name}`);
+          }
+        }
+        for (const name of declaredMandatory) {
+          if (!supplied.includes(name)) {
+            missing.push(`${location}.${name}`);
+          }
+        }
+      }
 
       if ((missing.length > 0) || (unknown.length > 0)) {
         return res.status(400).json({
