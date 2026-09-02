@@ -25,17 +25,9 @@ function validationMW(...middlewares) {
  * Checks that no unknown params were given, PER LOCATION.
  *
  * A name declared for the body is unknown in the query string, and vice
- * versa. That distinction is the point: the check used to merge body, params
- * and query into one namespace before looking for unknown names, so a
- * duplicate of a declared field in another location collapsed onto the same
- * key and passed. `?token=x` alongside a correct body was accepted.
- *
- * Harmless for most fields -- a controller reads one location and ignores the
- * stray copy -- and not harmless at all for a credential, where the damage is
- * done by the value being in the URL before any of this runs: it is in the
- * access log of every hop by then. Routes taking a password or a token used
- * to guard themselves one by one; this closes it for every route instead of
- * the ones somebody remembered.
+ * versa. Comparing names alone would let `?token=x` pass alongside a correct
+ * body, which matters for a credential: by the time this runs, a value in the
+ * URL is in the access log of every hop it crossed.
  *
  * A value that arrives ONLY in the wrong location was already refused, by the
  * field validator rather than by this check -- `body('x')` reads the body,
